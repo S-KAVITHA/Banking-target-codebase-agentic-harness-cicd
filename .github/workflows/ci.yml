@@ -1,0 +1,188 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  change-type-check:
+    name: Change Classifier
+    runs-on: ubuntu-latest
+    outputs:
+      changed-files: ${{ steps.classify.outputs.changed-files }}
+      requires-governed-check: ${{ steps.classify.outputs.requires-governed-check }}
+      touches-policy: ${{ steps.classify.outputs.touches-policy }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed files
+        id: classify
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          fi
+
+          CHANGED_ONELINE=$(echo "$CHANGED" | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+          echo "changed-files=$CHANGED_ONELINE" >> "$GITHUB_OUTPUT"
+
+          # Files that affect agent behavior, tool contracts, evals, or governance.
+          if echo "$CHANGED" | grep -qE '^(\.agents/|\.skills/|mcp-servers/|eval/|docs/governance-policy\.md|docs/routing-and-tool-grant-map\.md|scripts/run-agent\.sh)'; then
+            echo "requires-governed-check=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "requires-governed-check=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Policy/access-control-relevant files.
+          if echo "$CHANGED" | grep -qE '^(docs/governance-policy\.md|mcp-servers/.*/allow-list\.json|scripts/run-agent\.sh|\.skills/)'; then
+            echo "touches-policy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "touches-policy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  policy-gate:
+    name: Policy Test Suite
+    runs-on: ubuntu-latest
+    needs: change-type-check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build course container
+        run: docker build -t agentic_engineer_4 .
+
+      - name: Run policy tests
+        run: |
+          mkdir -p ci-artifacts
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE":/workspace:ro \
+            -v "$GITHUB_WORKSPACE/ci-artifacts":/reports \
+            -w /workspace \
+            agentic_engineer_4 \
+            python -m pytest eval/test_policy.py -v \
+              --json-report \
+              --json-report-file=/reports/policy-report.json
+
+      - name: Upload policy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-report
+          path: ci-artifacts/policy-report.json
+          retention-days: 90
+          if-no-files-found: ignore
+
+  governed-file-gate:
+    name: Governed File Check
+    runs-on: ubuntu-latest
+    needs: [change-type-check, policy-gate]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build course container
+        if: needs.change-type-check.outputs.requires-governed-check == 'true'
+        run: docker build -t agentic_engineer_4 .
+
+      - name: Run governed-file checks
+        if: needs.change-type-check.outputs.requires-governed-check == 'true'
+        run: |
+          mkdir -p ci-artifacts
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE":/workspace:ro \
+            -v "$GITHUB_WORKSPACE/ci-artifacts":/reports \
+            -w /workspace \
+            agentic_engineer_4 \
+            python -m pytest eval/test_governed_files.py -v \
+              --json-report \
+              --json-report-file=/reports/governed-file-report.json
+
+      - name: Upload governed-file report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governed-file-report
+          path: ci-artifacts/governed-file-report.json
+          retention-days: 90
+          if-no-files-found: ignore
+
+  advisory-review:
+    name: Advisory Code Review
+    runs-on: ubuntu-latest
+    needs: [change-type-check, policy-gate]
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build course container
+        run: docker build -t agentic_engineer_4 .
+
+      - name: Run advisory agentic review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir -p ci-out ci-artifacts
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE":/workspace:ro \
+            -v "$GITHUB_WORKSPACE/ci-out":/out \
+            -w /workspace \
+            -e ANTHROPIC_API_KEY \
+            -e CHANGED_FILES="${{ needs.change-type-check.outputs.changed-files }}" \
+            agentic_engineer_4 \
+            python scripts/run-reviewer.py
+
+          cp -r ci-out/. ci-artifacts/ 2>/dev/null || true
+
+      - name: Upload advisory review artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: advisory-review
+          path: ci-artifacts/
+          retention-days: 90
+          if-no-files-found: ignore
+
+  audit-trail:
+    name: Audit Trail
+    runs-on: ubuntu-latest
+    needs: [change-type-check, policy-gate, governed-file-gate, advisory-review]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ci-artifacts
+          merge-multiple: true
+
+      - name: Build audit trail
+        run: |
+          python3 scripts/build-audit-trail.py \
+            --sha "${{ github.sha }}" \
+            --event "${{ github.event_name }}" \
+            --pr "${{ github.event.pull_request.number || 0 }}" \
+            --changed-files "${{ needs.change-type-check.outputs.changed-files }}" \
+            --touches-policy "${{ needs.change-type-check.outputs.touches-policy }}" \
+            --requires-governed-check "${{ needs.change-type-check.outputs.requires-governed-check }}" \
+            --policy-result "${{ needs.policy-gate.result }}" \
+            --governed-result "${{ needs.governed-file-gate.result }}" \
+            --review-result "${{ needs.advisory-review.result }}" \
+            --artifacts ci-artifacts
+
+      - name: Upload audit trail
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-trail
+          path: ci-audit-trail-*.json
+          retention-days: 90
+          if-no-files-found: error
