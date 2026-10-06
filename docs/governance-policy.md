@@ -21,7 +21,7 @@ To widen access, open a pull request with: the proposed grant, a concrete justif
 ## Role: implementer
 
 **Version:** v1.0.0  
-**Defined in:** `.agents/implementer.md`
+**Defined in:** .claude/agents/implementer.md
 
 ### MCP server and operation access
 
@@ -46,7 +46,8 @@ To widen access, open a pull request with: the proposed grant, a concrete justif
 ### Data classification ceiling
 
 **Maximum level:** internal  
-**Reason:** Implementer does not require confidential data to perform implementation tasks.
+**Reason:** Implementer does not require confidential data; the calibration log records a near-miss where the Implementer requested confidential material above its internal ceiling.
+
 
 ### Autonomy level
 
@@ -58,26 +59,26 @@ To widen access, open a pull request with: the proposed grant, a concrete justif
 ## Role: reviewer
 
 **Version:** v1.0.0  
-**Defined in:** `.agents/reviewer.md`
+**Defined in:** .claude/agents/reviewer.md
 
 ### MCP server and operation access
 
-| Operation | Server | Granted | Justification / Denial reason |
-|---|---|---|---|
-| read_entry | storage | YES | Reviewer reads decisions to review them. |
-| list_entries | storage | YES | Reviewer checks what exists before reviewing. |
-| write_entry | storage | NO | Reviewer must not change project state. |
-| update_entry | storage | NO | Reviewer must not change project state. |
-| delete_entry | storage | NO | Reviewer must not remove project state. |
-| audit_read | storage | NO | Audit inspection is owned by the orchestrator. |
-| retrieve | retrieval | YES | Reviewer retrieves reference documents for context. |
+| Operation | Server | Granted | Justification / Denial reason                                                     |
+|---|---|---|-----------------------------------------------------------------------------------|
+| read_entry | storage | YES | Reviewer reads decisions to review them.                                          |
+| list_entries | storage | YES | Reviewer checks what exists before reviewing.                                     |
+| write_entry | storage | NO | Reviewer is read-only and must not change project state; least privilege.         |
+| update_entry | storage | NO | Tester reports results but does not update stored project state; least privilege. |
+| delete_entry | storage | NO | Reviewer must not remove project state.                                           |
+| audit_read | storage | NO | Audit inspection is owned by the orchestrator. least privilege.                                   |
+| retrieve | retrieval | YES | Reviewer retrieves reference documents for context.                               |
 
 ### Skill activation scope
 
 | Skill | Activation permitted | Reason if denied |
 |---|---|---|
 | run-tests | NO | Reviewer is read-only; running tests changes workspace state (calibration-log.md, near-miss: reviewer near-triggered run-tests). |
-| draft-pr-description | NO | Owned by project-manager role. |
+| draft-pr-description | NO | Project Manager owns pull-request descriptions; least privilege. |
 | summarize-session | YES | Reviewer may summarize its own review. |
 
 ### Data classification ceiling
@@ -95,7 +96,7 @@ To widen access, open a pull request with: the proposed grant, a concrete justif
 ## Role: tester
 
 **Version:** v1.0.0  
-**Defined in:** `.agents/tester.md`
+**Defined in:** .claude/agents/tester.md
 
 ### MCP server and operation access
 
@@ -132,27 +133,27 @@ To widen access, open a pull request with: the proposed grant, a concrete justif
 ## Role: project-manager
 
 **Version:** v1.0.0  
-**Defined in:** `.agents/project-manager.md`
+**Defined in:** .claude/agents/project-manager.md
 
 ### MCP server and operation access
 
-| Operation | Server | Granted | Justification / Denial reason |
-|---|---|---|---|
-| read_entry | storage | YES | Project-manager reads project state for summaries. |
-| list_entries | storage | YES | Project-manager lists state before drafting descriptions. |
-| write_entry | storage | NO | Project-manager does not update project state directly. |
-| update_entry | storage | NO | Project-manager does not update project state directly. |
-| delete_entry | storage | NO | Project-manager must not remove project state. |
-| audit_read | storage | NO | Audit inspection is owned by the orchestrator. |
-| retrieve | retrieval | NO | Project-manager does not perform retrieval in this sample workflow. |
+| Operation | Server | Granted | Justification / Denial reason                                                        |
+|---|---|---|--------------------------------------------------------------------------------------|
+| read_entry | storage | YES | Project-manager reads project state for summaries.                                   |
+| list_entries | storage | YES | Project-manager lists state before drafting descriptions.                            |
+| write_entry | storage | NO | Project-manager does not update project state directly. least privilege.             |
+| update_entry | storage | NO | Project-manager does not update project state directly. least privilege.             |
+| delete_entry | storage | NO | Project-manager must not remove project state. least privilege.                      |
+| audit_read | storage | NO | Audit inspection is owned by the orchestrator. least privilege.                                      |
+| retrieve | retrieval | NO | Project-manager does not perform retrieval in this sample workflow. least privilege. |
 
 ### Skill activation scope
 
-| Skill | Activation permitted | Reason if denied |
-|---|---|---|
-| run-tests | NO | Planning and description work does not run tests. |
-| draft-pr-description | YES | Project-manager owns pull-request descriptions. |
-| summarize-session | YES | Project-manager may summarize its own work. |
+| Skill | Activation permitted | Reason if denied                                                    |
+|---|---|---------------------------------------------------------------------|
+| run-tests | NO | Planning and description work does not run tests. least privilege.  |
+| draft-pr-description | YES | Project-manager owns pull-request descriptions.                     |
+| summarize-session | YES | Project-manager may summarize its own work.                         |
 
 ### Data classification ceiling
 
@@ -169,7 +170,7 @@ To widen access, open a pull request with: the proposed grant, a concrete justif
 ## Role: orchestrator
 
 **Version:** v1.0.0  
-**Defined in:** `.agents/orchestrator.md`
+**Defined in:** .claude/agents/orchestrator.md
 
 ### MCP server and operation access
 
