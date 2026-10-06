@@ -154,7 +154,6 @@ COPY docs/ /workspace/docs/
 COPY eval/ /workspace/eval/
 COPY schemas/ /workspace/schemas/
 COPY examples/ /workspace/examples/
-COPY Banking-target-codebase-agentic-harness-cicd/ /workspace/Banking-target-codebase-agentic-harness-cicd/
 COPY CLAUDE.md /workspace/CLAUDE.md
 
 # --- Workspace directory structure for Module 4 ---
