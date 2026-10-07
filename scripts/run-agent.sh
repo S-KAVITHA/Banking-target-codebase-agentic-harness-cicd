@@ -42,6 +42,9 @@ mkdir -p logs
 ARGS+=( -v "$(pwd):/workspace:${WORKSPACE_MODE}" )
 ARGS+=( -v "$(pwd)/logs:/logs:rw" )
 
+# Shared Claude login; the entrypoint restores the credential from here.
+ARGS+=( -v claude-auth:/claude-auth )
+
 # Audit log locations.
 ARGS+=( -e "STORAGE_AUDIT_LOG=/logs/storage-audit-log.jsonl" )
 ARGS+=( -e "RETRIEVAL_AUDIT_LOG=/logs/retrieval-audit-log.jsonl" )

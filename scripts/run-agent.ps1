@@ -43,9 +43,21 @@ $DockerArgs = @(
     '--network', 'agent-internal',
     '-v', "${CurDir}:/workspace:${WorkspaceMode}",
     '-v', "${CurDir}/logs:/logs:rw",
+    # Shared Claude login; the entrypoint restores the credential from here.
+    '-v', 'claude-auth:/claude-auth',
     '-e', 'STORAGE_AUDIT_LOG=/logs/storage-audit-log.jsonl',
     '-e', 'RETRIEVAL_AUDIT_LOG=/logs/retrieval-audit-log.jsonl'
 )
+
+# Slack configuration. The entrypoint requires both variables. "-e NAME" with
+# no value forwards the host's value, keeping the token off the command line.
+foreach ($Var in 'SLACK_BOT_TOKEN', 'SLACK_TEAM_ID') {
+    if (-not [Environment]::GetEnvironmentVariable($Var)) {
+        Write-Error "$Var is not set. Set it first, e.g. `$env:$Var = '...'"
+        exit 1
+    }
+    $DockerArgs += '-e', $Var
+}
 
 if ($MountMemory) {
     $DockerArgs += '-v', 'agent-memory:/memory'
