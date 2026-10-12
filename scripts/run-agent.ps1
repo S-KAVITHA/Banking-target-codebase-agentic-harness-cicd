@@ -14,7 +14,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$Image = if ($env:AGENT_IMAGE) { $env:AGENT_IMAGE } else { 'launchcode-agentic:module4' }
+$Image = if ($env:AGENT_IMAGE) { $env:AGENT_IMAGE } else { 'banking-target-codebase-agentic-harness-cicd' }
 $WorkspaceMode = 'ro'
 $MountMemory = $false
 
