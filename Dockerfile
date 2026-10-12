@@ -30,7 +30,7 @@ COPY statusline.sh /root/.claude/statusline.sh
 RUN chmod +x /root/.claude/statusline.sh
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN sed -i "s/\r$//" /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 RUN echo 'export PS1="ai-course:\w# "' >> /root/.bashrc && \
     echo 'alias ll="ls -alF"' >> /root/.bashrc
@@ -185,7 +185,7 @@ RUN mkdir -p \
 
 # --- Entrypoint ---
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN sed -i "s/\r$//" /usr/local/bin/docker-entrypoint.sh && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # --- Shell quality-of-life for learners ---
 RUN echo 'export PS1="ai-course:\w# "' >> /root/.bashrc && \

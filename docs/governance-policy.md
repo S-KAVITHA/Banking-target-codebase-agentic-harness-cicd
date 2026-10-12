@@ -221,40 +221,6 @@ To widen access, open a pull request with: the proposed grant, a concrete justif
 
 **Escalation in production.** If drift is detected in a deployed environment, treat it as an incident: revert or hotfix the offending change, notify the policy owner or on-call engineer, and record the event in the audit trail or incident log. No governed change ships while the suite is failing.
 
-
-## Role: documentation-auditor
-
-Version: v1.0.0
-Defined in: .claude/agents/documentation-auditor.md
-
-MCP server and operation access
-Operation	Server	Granted	Justification / Denial reason
-write_entry	storage	NO	Documentation Auditor reports findings and must not write to memory.
-read_entry	storage	NO	Reading workflow memory is unnecessary for reviewing permitted documentation.
-list_entries	storage	NO	Listing memory entries could expose unrelated or sensitive project information.
-update_entry	storage	NO	Updating decision records is outside the role's responsibilities.
-delete_entry	storage	NO	Deletion is unnecessary for documentation review; denial prevents accidental or unauthorized loss of audit records.
-audit_read	storage	NO	Inspecting authorization audit records is not required for ordinary documentation review.
-retrieve	retrieval	YES	Required to inspect permitted project documentation and identify inconsistencies.
-Skill activation scope
-Skill	Activation permitted	Reason if denied
-run-tests	NO	Running tests is outside the documentation-review role and belongs to the testing workflow.
-draft-pr-description	NO	Drafting publication-related material is outside the role's defined review responsibility.
-summarize-session	NO	Session summarization is not required to review documentation.
-Data classification ceiling
-
-Maximum level: internal
-Reason: Documentation Auditor reviews project documentation but does not need confidential or restricted information. Retrieval must enforce this ceiling and withhold documents above the permitted level.
-
-Autonomy level
-
-Level: low
-Conditions for human checkpoint: Human approval is required before any proposed change to project files, governance policy, permissions, or publication of findings outside the authorized workflow. The role may independently read permitted documentation and report findings.
-
-Reason: Read-only review is low risk, but policy changes and external disclosure require human accountability.
-
-Container permissions: workspace read-only, memory omitted.
-
 ## Role: documentation-auditor
 
 **Version:** v1.0.0  
@@ -264,26 +230,27 @@ Container permissions: workspace read-only, memory omitted.
 
 | Operation | Server | Granted | Justification / Denial reason |
 |---|---|---|---|
-| write_entry | storage | NO | Documentation Auditor only reports findings and does not need to write memory entries. |
-| read_entry | storage | NO | Reading workflow memory is unnecessary for documentation review. |
-| list_entries | storage | NO | Listing memory entries could expose unrelated or sensitive project information. |
-| update_entry | storage | NO | Updating decision records is outside the role's responsibilities. |
-| delete_entry | storage | NO | Deletion is unnecessary and could cause irreversible loss of audit records. |
-| audit_read | storage | NO | Reading authorization audit records is not required for ordinary documentation review. |
-| retrieve | retrieval | YES | Required to inspect permitted project documentation and identify inconsistencies. |
+| write_entry | storage | NO | Denied under least privilege because documentation review does not require writing memory entries. |
+| read_entry | storage | NO | Denied under least privilege because the role can review permitted documentation without reading workflow memory. |
+| list_entries | storage | NO | Denied under least privilege because enumerating memory records is unnecessary and could expose unrelated project information. |
+| update_entry | storage | NO | Denied under least privilege because modifying decision records is outside the role's responsibilities. |
+| delete_entry | storage | NO | Closes Near-miss Pattern 1 in the Calibration Log: an Implementer nearly deleted project state after receiving an over-broad tool grant. Documentation Auditor does not need deletion access, and granting it risks irreversible loss of shared project state. |
+| audit_read | storage | NO | Denied under least privilege because ordinary documentation review does not require access to authorization audit records. |
+| retrieve | retrieval | YES | Required to inspect permitted project documentation. Retrieval must enforce the internal classification ceiling and withhold confidential documents, addressing Near-miss Pattern 3 in the Calibration Log. |
 
 ### Skill activation scope
 
 | Skill | Activation permitted | Reason if denied |
 |---|---|---|
-| run-tests | NO | Running tests is outside the role's documentation-review responsibilities. |
-| draft-pr-description | NO | Drafting pull-request descriptions is not required for documentation auditing. |
-| summarize-session | NO | Session summarization is outside the role's defined responsibilities. |
+| run-tests | NO | Closes Near-miss Pattern 2 in the Calibration Log: a review subagent's output nearly triggered run-tests. A read-only documentation role must not activate a skill that could change workspace state. |
+| draft-pr-description | NO | Denied under least privilege because preparing pull-request descriptions is outside the role's defined documentation-audit responsibilities. |
+| summarize-session | NO | Denied under least privilege because session summarization is unnecessary for reviewing permitted project documentation. |
 
 ### Data classification ceiling
 
-**Maximum level:** internal  
-**Reason:** The role only needs public and internal project documentation. Confidential and restricted documents must be withheld by the retrieval enforcement layer.
+**Maximum level:** internal
+
+**Reason:** Documentation Auditor only needs public and internal project documentation. Near-miss Pattern 3 in the Calibration Log records an Implementer requesting a confidential document above its internal ceiling. The retrieval server must withhold documents above this role's ceiling to prevent unauthorized disclosure.
 
 ### Autonomy level
 

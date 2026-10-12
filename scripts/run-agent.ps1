@@ -2,7 +2,7 @@
 # governance policy allows. Pass the role name as the first argument.
 #
 # Usage: .\scripts\run-agent.ps1 <role-name> [command...]
-# Roles: implementer, orchestrator, reviewer, tester, project-manager
+# Roles: implementer, orchestrator, reviewer, tester, project-manager, documentation-auditor
 
 param(
     [Parameter(Mandatory = $true, Position = 0)]
@@ -23,7 +23,7 @@ switch ($Role) {
         $WorkspaceMode = 'rw'
         $MountMemory = $true
     }
-    { $_ -in 'reviewer', 'tester', 'project-manager' } {
+    { $_ -in 'reviewer', 'tester', 'project-manager', 'documentation-auditor'  } {
         $WorkspaceMode = 'ro'
         $MountMemory = $false
     }

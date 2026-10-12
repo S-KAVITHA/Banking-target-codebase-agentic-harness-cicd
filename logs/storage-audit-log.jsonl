@@ -1,0 +1,1 @@
+{"timestamp": "2026-10-12T01:45:26.372649+00:00", "event": "authorization_denied", "operation": "write_entry", "role": "documentation-auditor", "outcome": "authorization_denied", "detail": null, "policy_reference": "docs/governance-policy.md"}
