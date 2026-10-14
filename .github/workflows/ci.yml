@@ -127,6 +127,57 @@ jobs:
           retention-days: 90
           if-no-files-found: ignore
 
+  eval-gate:
+    name: Evaluation Harness
+    runs-on: ubuntu-latest
+    needs: [change-type-check, policy-gate]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build course container
+        if: needs.change-type-check.outputs.requires-governed-check == 'true'
+        run: docker build -t agentic_engineer_4 .
+
+      - name: Run deterministic checks
+        if: needs.change-type-check.outputs.requires-governed-check == 'true'
+        run: |
+          mkdir -p ci-artifacts
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE":/workspace:ro \
+            -v "$GITHUB_WORKSPACE/ci-artifacts":/reports \
+            -w /workspace \
+            agentic_engineer_4 \
+            python -m pytest -p no:cacheprovider \
+              eval/test_deterministic.py \
+              eval/test_deterministic_router.py \
+              eval/test_deterministic_step.py -v \
+              --json-report \
+              --json-report-file=/reports/deterministic-report.json
+
+      - name: Run rubric checks
+        if: needs.change-type-check.outputs.requires-governed-check == 'true'
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE":/workspace:ro \
+            -v "$GITHUB_WORKSPACE/ci-artifacts":/reports \
+            -w /workspace \
+            agentic_engineer_4 \
+            python -m pytest -p no:cacheprovider eval/test_rubric_suite.py -v \
+              --json-report \
+              --json-report-file=/reports/rubric-report.json
+
+      - name: Upload eval reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-reports
+          path: |
+            ci-artifacts/deterministic-report.json
+            ci-artifacts/rubric-report.json
+          retention-days: 90
+          if-no-files-found: ignore
+
   advisory-review:
     name: Advisory Code Review
     runs-on: ubuntu-latest
@@ -167,7 +218,7 @@ jobs:
   audit-trail:
     name: Audit Trail
     runs-on: ubuntu-latest
-    needs: [change-type-check, policy-gate, governed-file-gate, advisory-review]
+    needs: [change-type-check, policy-gate, governed-file-gate, eval-gate, advisory-review]
     if: always()
     steps:
       - uses: actions/checkout@v4
