@@ -80,6 +80,7 @@ jobs:
   verify-openrouter-secret:
     name: Verify OpenRouter Secret
     runs-on: ubuntu-latest
+    needs: policy-gate
     steps:
       - name: Verify secret is present
         env:
