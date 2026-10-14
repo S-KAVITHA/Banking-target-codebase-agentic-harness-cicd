@@ -63,8 +63,9 @@ jobs:
             -v "$GITHUB_WORKSPACE":/workspace:ro \
             -v "$GITHUB_WORKSPACE/ci-artifacts":/reports \
             -w /workspace \
+            --entrypoint python \
             agentic_engineer_4 \
-            python -m pytest eval/test_policy.py -v \
+            -m pytest eval/test_policy.py -v \
               --json-report \
               --json-report-file=/reports/policy-report.json
 
@@ -113,8 +114,9 @@ jobs:
             -v "$GITHUB_WORKSPACE":/workspace:ro \
             -v "$GITHUB_WORKSPACE/ci-artifacts":/reports \
             -w /workspace \
+            --entrypoint python \
             agentic_engineer_4 \
-            python -m pytest eval/test_governed_files.py -v \
+            -m pytest eval/test_governed_files.py -v \
               --json-report \
               --json-report-file=/reports/governed-file-report.json
 
@@ -147,8 +149,9 @@ jobs:
             -v "$GITHUB_WORKSPACE":/workspace:ro \
             -v "$GITHUB_WORKSPACE/ci-artifacts":/reports \
             -w /workspace \
+            --entrypoint python \
             agentic_engineer_4 \
-            python -m pytest -p no:cacheprovider \
+            -m pytest -p no:cacheprovider \
               eval/test_deterministic.py \
               eval/test_deterministic_router.py \
               eval/test_deterministic_step.py -v \
@@ -162,8 +165,9 @@ jobs:
             -v "$GITHUB_WORKSPACE":/workspace:ro \
             -v "$GITHUB_WORKSPACE/ci-artifacts":/reports \
             -w /workspace \
+            --entrypoint python \
             agentic_engineer_4 \
-            python -m pytest -p no:cacheprovider eval/test_rubric_suite.py -v \
+            -m pytest -p no:cacheprovider eval/test_rubric_suite.py -v \
               --json-report \
               --json-report-file=/reports/rubric-report.json
 
@@ -201,8 +205,9 @@ jobs:
             -w /workspace \
             -e ANTHROPIC_API_KEY \
             -e CHANGED_FILES="${{ needs.change-type-check.outputs.changed-files }}" \
+            --entrypoint python \
             agentic_engineer_4 \
-            python scripts/run-reviewer.py
+            scripts/run-reviewer.py
 
           cp -r ci-out/. ci-artifacts/ 2>/dev/null || true
 
