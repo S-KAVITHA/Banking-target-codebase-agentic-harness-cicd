@@ -4,7 +4,9 @@ Run an advisory agentic code review on changed files.
 
 This script:
 - Reads CHANGED_FILES from the environment.
-- Reads ANTHROPIC_API_KEY from the environment.
+- Reads ANTHROPIC_API_KEY, or OPENROUTER_API_KEY, from the environment.
+  An OpenRouter key (sk-or-...) is sent to OpenRouter's Anthropic-compatible
+  endpoint, wherever it was supplied.
 - Reviews only text-like changed files.
 - Writes /out/review-output.md.
 - Writes /out/review-audit.json.
@@ -110,16 +112,36 @@ def collect_file_context(paths: list[str]) -> tuple[str, list[dict]]:
     return "\n".join(chunks), audit_files
 
 
+def resolve_provider() -> tuple[str, str] | None:
+    """Return (provider, api_key), or None when no usable key is present."""
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if anthropic_key and not anthropic_key.startswith("sk-or-"):
+        return "anthropic", anthropic_key
+    if openrouter_key or anthropic_key:
+        return "openrouter", openrouter_key or anthropic_key
+    return None
+
+
 def call_anthropic(prompt: str) -> str:
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if not api_key:
+    provider = resolve_provider()
+    if provider is None:
         return (
             "## Advisory Code Review\n\n"
-            "No review was performed because `ANTHROPIC_API_KEY` was not available. "
-            "Confirm that the repository secret is configured and injected only into this step.\n"
+            "No review was performed because neither `ANTHROPIC_API_KEY` nor "
+            "`OPENROUTER_API_KEY` was available. Confirm that a repository secret "
+            "is configured and injected only into this step.\n"
         )
+    provider_name, api_key = provider
 
-    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+    if provider_name == "openrouter":
+        url = "https://openrouter.ai/api/v1/messages"
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.5")
+        auth_headers = {"authorization": f"Bearer {api_key}"}
+    else:
+        url = "https://api.anthropic.com/v1/messages"
+        model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+        auth_headers = {"x-api-key": api_key}
 
     payload = {
         "model": model,
@@ -133,12 +155,12 @@ def call_anthropic(prompt: str) -> str:
     }
 
     request = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
+        url,
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "content-type": "application/json",
-            "x-api-key": api_key,
             "anthropic-version": "2023-06-01",
+            **auth_headers,
         },
         method="POST",
     )
@@ -148,9 +170,9 @@ def call_anthropic(prompt: str) -> str:
             data = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        return f"## Advisory Code Review\n\nAnthropic API request failed: HTTP {exc.code}\n\n```text\n{detail[:2000]}\n```"
+        return f"## Advisory Code Review\n\n{provider_name} API request failed: HTTP {exc.code}\n\n```text\n{detail[:2000]}\n```"
     except Exception as exc:
-        return f"## Advisory Code Review\n\nAnthropic API request failed: `{exc}`"
+        return f"## Advisory Code Review\n\n{provider_name} API request failed: `{exc}`"
 
     blocks = data.get("content", [])
     text_parts = [b.get("text", "") for b in blocks if b.get("type") == "text"]
@@ -213,6 +235,8 @@ def main() -> int:
         "changed_files": changed_files,
         "files": audit_files,
         "anthropic_key_present": bool(os.environ.get("ANTHROPIC_API_KEY", "").strip()),
+        "openrouter_key_present": bool(os.environ.get("OPENROUTER_API_KEY", "").strip()),
+        "provider": (resolve_provider() or ("none",))[0],
         "output": "/out/review-output.md",
         "exit_behavior": "always_zero_advisory",
     }
