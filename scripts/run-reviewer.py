@@ -136,7 +136,7 @@ def call_anthropic(prompt: str) -> str:
 
     if provider_name == "openrouter":
         url = "https://openrouter.ai/api/v1/messages"
-        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-sonnet-4.5")
+        model = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-haiku-4.5")
         auth_headers = {"authorization": f"Bearer {api_key}"}
     else:
         url = "https://api.anthropic.com/v1/messages"
