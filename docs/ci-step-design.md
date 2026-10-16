@@ -51,7 +51,5 @@
 - Time limit: 5 minutes.
 - Credentials: none.
 - Audit integration: Included in audit-trail's needs: list. Report generation and upload run even if validation fails.
-  - Verified: Design covers two failure cases:
-  policy-gate has continue-on-error: true → validator fails.
-  audit-trail loses if: always() → validator fails.
+- Verified: Temporarily added `continue-on-error: true` to `policy-gate`. Pipeline Integrity Check detected the weakened gate and failed with exit code 1. The failure report appeared in the audit trail. Reverted the change and confirmed the workflow passed again.
 - Artifact handling: Skipped or not-applicable states must follow the existing audit schema rather than being reported as failures.
