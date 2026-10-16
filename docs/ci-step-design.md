@@ -42,3 +42,14 @@
 - Classification: advisory (new; promote to gating once stable).
 - Time limit: 15 minutes.
 - Credentials: OPENROUTER_API_KEY, scoped to this step only.
+
+## Step: Pipeline Integrity Check
+- Does: Inspects .github/workflows/ci.yml to ensure policy-gate and eval-gate do not use continue-on-error: true, audit-trail retains if: always(), and change-type-check still exists.
+- Input: .github/workflows/ci.yml.
+- Produces: pipeline-integrity-report.json, containing job status and detected violations in the existing audit-report schema.
+- Classification: gating, permanent; protects agreed-upon pipeline invariants and must never be demoted to advisory.
+- Time limit: 5 minutes.
+- Credentials: none.
+- Audit integration: Included in audit-trail's needs: list. Report generation and upload run even if validation fails.
+- Verified: Temporarily added `continue-on-error: true` to `policy-gate`. Pipeline Integrity Check detected the weakened gate and failed with exit code 1. The failure report appeared in the audit trail. Reverted the change and confirmed the workflow passed again.
+- Artifact handling: Skipped or not-applicable states must follow the existing audit schema rather than being reported as failures.
