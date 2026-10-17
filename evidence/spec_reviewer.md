@@ -1,0 +1,3 @@
+Reviewer Specification
+
+The Reviewer receives the implementation results and applicable requirements, checks whether the changes satisfy those requirements, and identifies defects, regressions, or missing evidence. It reports findings and a clear review decision. Where strict and lenient reviewers are used, their respective review criteria must be applied. Disagreements requiring human judgment must be escalated rather than silently resolved.

@@ -45,6 +45,10 @@ from pathlib import Path
 
 import anthropic
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+
+from reviewer_conflict_deterministic import find_reviewer_conflicts
+
 # ── model ────────────────────────────────────────────────────────────────────
 
 MODEL = "anthropic/claude-haiku-4.5"
@@ -626,16 +630,10 @@ def run_orchestrator(
         e for e in transcript_events
         if e.get("type") == "subagent" and e.get("role", "").startswith("reviewer")
     ]
-    escalated = False
-    if len(reviewer_events) >= 2:
-        verdicts: dict[str, set] = {}
-        for rev in reviewer_events:
-            for item in rev.get("review_items", []):
-                verdicts.setdefault(item["section"], set()).add(item["verdict"])
-        conflicts = [s for s, v in verdicts.items() if "approve" in v and "reject" in v]
-        if conflicts:
-            escalated = True
-            print(f"  Reviewer conflict detected on: {conflicts}. Setting escalated_to_human=true.")
+    conflicts = find_reviewer_conflicts(reviewer_events)
+    escalated = bool(conflicts)
+    if conflicts:
+        print(f"  Reviewer conflict detected: {conflicts}. Setting escalated_to_human=true.")
 
     transcript: dict = {
         "expected_path": expected_path,

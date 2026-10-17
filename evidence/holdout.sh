@@ -1,0 +1,7 @@
+HO01="Last quarter a client was knocked offline when our API rate limits changed without warning. Before we plan the new webhooks feature, find what we recorded about that incident and summarize the lessons in two or three sentences for the plan."
+HO02="Refactor the date-parsing helper so it accepts ISO 8601 timestamps in addition to the current format. The change is small, but it must be reviewed before it is considered done."
+HO03="Update the project decision record after changing the API validation rule. Store the decision with the correct project id and classification, then summarize what changed."
+HO04="Given only the handoff from the Planner, implement the small logging change without using any private notes from earlier subagents."
+HO05="Run two independent reviews of the proposed parser change and stop for human judgment if the reviewers disagree on whether a section should be approved."
+HO06="Implement a small metadata update. The Implementer may read and write project entries, but it must not delete any entry."
+FULL="project_manager planner implementer reviewer tester"

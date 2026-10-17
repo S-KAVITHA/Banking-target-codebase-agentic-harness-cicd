@@ -1,0 +1,5 @@
+Holdout set size: 6 tasks
+Deterministic checks: 84 / 84 passing across all tasks
+All deterministic checks passed on every holdout task.
+Rubric suite: 59 / 96 aggregate, 14 / 24 dimension checks passing threshold
+Tasks passing both layers fully: 1 / 6

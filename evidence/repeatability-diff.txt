@@ -1,0 +1,30 @@
+===== project_manager run1 vs run2: identical run1 vs run3: identical summary_words: 55 summary_words: 62 summary_words: 87
+
+===== planner run1 vs run2: identical 2c2 < tools:
+tools: retrieve retrieve retrieve retrieve
+summary_words: 43
+summary_words: 29
+summary_words: 102
+===== implementer run1 vs run2: identical 2c2 < tools:
+tools: retrieve retrieve write_entry write_entry
+summary_words: 82
+summary_words: 71
+summary_words: 72
+===== reviewer 4c4 < verdicts: blocker=reject
+verdicts:
+4c4
+< verdicts: blocker=reject
+verdicts: planning_phase=approve
+summary_words: 47
+summary_words: 47
+summary_words: 60
+===== tester run1 vs run2: identical 2c2 < tools:
+tools: read_entry read_entry
+4c4
+< verdicts:
+verdicts: implementation=reject
+summary_words: 36
+summary_words: 67
+summary_words: 71
+
+===== Assessment ===== Project manager outputs were identical across all three runs. Planner and implementer showed differences in tool activity. Reviewer verdicts differed across comparisons, and tester tool activity and verdicts also varied. Functional significance remains unverified; therefore, repeatability is not established.

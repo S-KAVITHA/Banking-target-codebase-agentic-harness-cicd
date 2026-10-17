@@ -1,0 +1,5 @@
+role: tester
+tools: 
+output_keys: citation_list,summary
+verdicts: 
+decision: 

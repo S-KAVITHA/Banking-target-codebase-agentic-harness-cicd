@@ -1,0 +1,5 @@
+role: tester
+tools: read_entry read_entry
+output_keys: citation_list,summary
+verdicts: implementation=reject
+decision: 

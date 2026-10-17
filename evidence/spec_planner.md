@@ -1,0 +1,3 @@
+Planner Specification
+
+The Planner receives the task description and available context, breaks the task into actionable steps, identifies dependencies, and selects the appropriate agent roles. It defines expected outcomes and passes the plan to the next agent using the required handoff format. If essential information is missing, it identifies the uncertainty rather than inventing requirements. Its output contains an ordered plan and clear completion criteria.

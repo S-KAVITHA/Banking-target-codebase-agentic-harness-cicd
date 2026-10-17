@@ -8,6 +8,10 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts"))
+
+from reviewer_conflict_deterministic import find_reviewer_conflicts
+
 # Artifacts the checks read.
 # Audit logs are per-transcript: same directory and basename as the transcript,
 # with a .log extension (e.g. DEV-01.json -> DEV-01.log).
@@ -258,15 +262,11 @@ def check_no_reviewer_conflict(transcript):
             "reviewer_conflict", "conflicting reviewers", True,
             "fewer than two reviewers ran; no conflict possible.",
         )
-    verdicts = {}
-    for r in reviews:
-        for item in r.get("review_items", []):
-            verdicts.setdefault(item["section"], set()).add(item["verdict"])
-    conflicts = [s for s, v in verdicts.items() if "approve" in v and "reject" in v]
+    conflicts = find_reviewer_conflicts(reviews)
     if conflicts and not transcript.get("escalated_to_human", False):
         return result(
             "reviewer_conflict", "conflicting reviewers", False,
-            f"unresolved contradictory verdicts on: {conflicts}.",
+            f"reviewer conflict not escalated: {conflicts}.",
         )
     return result(
         "reviewer_conflict", "conflicting reviewers", True,

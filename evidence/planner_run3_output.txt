@@ -1,0 +1,5 @@
+role: planner
+tools: retrieve retrieve retrieve retrieve
+output_keys: citation_list,summary
+verdicts: 
+decision: 

@@ -1,0 +1,5 @@
+role: reviewer
+tools: 
+output_keys: citation_list,summary
+verdicts: planning_phase=approve
+decision: 
