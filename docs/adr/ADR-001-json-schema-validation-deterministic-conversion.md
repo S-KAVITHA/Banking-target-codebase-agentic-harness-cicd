@@ -28,3 +28,4 @@ Cycle time fell from 45 seconds to 0.2 seconds, token cost fell from $0.003 per 
 - Before-conversion measurement: `docs/calibration-log.md`, before-conversion entry.
 - After-conversion measurement in isolation: `docs/calibration-log.md`, after-conversion entry.
 - Integrated end-to-end regression check: `docs/calibration-log.md`, integrated end-to-end regression check.
+- Provenance: this ADR and its implementation (`scripts/validate_handoff_deterministic.py`, `eval/test_deterministic_step.py`) were migrated together into this repository in commit `7d8045e` (2026-10-05). The conversion was completed in earlier work (2026-06-06, per `docs/step-classification.md`), and no separate "Proposed" commit exists in this repository's history.
