@@ -155,6 +155,7 @@ Run: `python3 eval/run_holdout.py .eval-artifacts/runs/holdout-clean` (from repo
 - Token cost: $0.003 per run.
 - Deterministic harness checks: 7/7 passing.
 - Review latency: about 30 seconds.
+- Note (2026-10-19): these values are historical estimates from the original conversion work (2026-06); the source harness reports were not carried into this repository. The agentic validation step no longer exists in `eval/orchestrator.py`, so this baseline cannot be re-measured. Treat these figures as estimates, not verified measurements.
 
 ### After conversion — deterministic handoff validator in isolation
 
@@ -163,6 +164,18 @@ Run: `python3 eval/run_holdout.py .eval-artifacts/runs/holdout-clean` (from repo
 - Deterministic harness checks: 7/7 passing.
 - Output variance: zero; `diff` reported no differences across three runs.
 - Review latency: about 5 seconds.
+
+### After conversion — re-measurement (2026-10-19)
+
+- Input: `examples/holdout.json`, three runs of `python scripts/validate_handoff_deterministic.py --input examples/holdout.json --output result_runN.json` inside the container.
+- Cycle time: 0.136 s, 0.139 s, 0.143 s (average ≈0.14 s).
+- Token cost: $0 (no model call).
+- Output variance: zero; `diff result_run1.json result_run2.json` and `diff result_run1.json result_run3.json` reported no differences. Each result was `{"valid": true, "problems": []}`.
+- Unit tests: `eval/test_deterministic_step.py` 7/7 passing, including the empty, whitespace-only, and missing required-field cases.
+- Harness: `eval/test_deterministic.py` 3/3 passing, including `test_handoff_validator_cli_accepts_good_input`.
+- Rubric dimensions (`eval/rubric.json`): correctness and task_adherence are covered by the deterministic checks above; clarity and groundedness score prose and are **not applicable** to structured output (N/A, not a failure).
+- Review latency: not re-measured in this run.
+- Regression: none. Every deterministic check passes.
 
 ### Integrated end-to-end regression check
 
