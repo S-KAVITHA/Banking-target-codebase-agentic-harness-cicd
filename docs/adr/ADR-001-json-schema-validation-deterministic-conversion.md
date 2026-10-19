@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Proposed
 
 ## Context
 
@@ -25,7 +25,7 @@ Cycle time fell from 45 seconds to 0.2 seconds, token cost fell from $0.003 per 
 ## Evidence
 
 - Classification: `docs/step-classification.md`, JSON schema validation marked strong candidate.
-- Before-conversion measurement: `docs/calibration-log.md`, before-conversion entry.
-- After-conversion measurement in isolation: `docs/calibration-log.md`, after-conversion entry.
+- Before-conversion measurement: `docs/calibration-log.md`, before-conversion entry (historical estimate; marked as such in commit `21d7129`).
+- After-conversion measurement in isolation: `docs/calibration-log.md`, after-conversion entry, and the measured re-run in commit `4920c0e` (0.14 s average, $0, identical output across three runs, all deterministic checks passing, clarity and groundedness N/A).
 - Integrated end-to-end regression check: `docs/calibration-log.md`, integrated end-to-end regression check.
 - Provenance: this ADR and its implementation (`scripts/validate_handoff_deterministic.py`, `eval/test_deterministic_step.py`) were migrated together into this repository in commit `7d8045e` (2026-10-05). The conversion was completed in earlier work (2026-06-06, per `docs/step-classification.md`), and no separate "Proposed" commit exists in this repository's history.
