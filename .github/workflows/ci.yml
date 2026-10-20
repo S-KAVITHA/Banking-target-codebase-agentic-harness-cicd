@@ -182,6 +182,34 @@ jobs:
           retention-days: 90
           if-no-files-found: ignore
 
+  handoff-validation:
+    name: Handoff Validation
+    runs-on: ubuntu-latest
+    needs: change-type-check
+    # Deterministic script, no inference: no API key is passed to this job.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate handoff (deterministic)
+        run: |
+          mkdir -p ci-artifacts
+          python scripts/validate_handoff_deterministic.py \
+            --input examples/handoff.json \
+            --output ci-artifacts/handoff-validation.json
+
+      - name: Upload handoff validation result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: handoff-validation
+          path: ci-artifacts/handoff-validation.json
+          retention-days: 90
+          if-no-files-found: ignore
+
   advisory-review:
     name: Advisory Code Review
     runs-on: ubuntu-latest
@@ -225,7 +253,7 @@ jobs:
   audit-trail:
     name: Audit Trail
     runs-on: ubuntu-latest
-    needs: [change-type-check, policy-gate, governed-file-gate, eval-gate, advisory-review, pipeline-integrity]
+    needs: [change-type-check, policy-gate, governed-file-gate, eval-gate, handoff-validation, advisory-review, pipeline-integrity]
     if: always()
     steps:
       - uses: actions/checkout@v4
