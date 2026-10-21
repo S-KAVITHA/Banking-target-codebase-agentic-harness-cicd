@@ -2,14 +2,19 @@
 
 This document records the four-signal assessment of agentic workflow steps: stability, repeatability, specifiability, and high run rate. A step is recommended for deterministic conversion only when all four signals are supported by evidence.
 
+This document is updated after every calibration cycle. Steps that cross the
+stability threshold are promoted to candidate status. A step that has been a
+candidate for more than two calibration cycles without meeting all four
+signals is reviewed for re-scoping.
+
 ## Step: JSON Schema Validation
-- **Status:** Converted to deterministic (ADR-001, 2026-06-06).
+
+- **Status:** Converted to deterministic (ADR-001, 2026-06-06). ADR-001 accepted 2026-10-21 (commit `2999335`) after the integrated end-to-end regression check (commit `af60fb7`, 14/14 checks passing, no regressions).
 - **Stability:** Harness scores 14/16, 15/16, 14/16 across the last three calibration runs. Consistent.
 - **Repeatability:** Three runs on the same holdout input produced identical output.
 - **Specifiability:** Validate the output against `schemas/handoff.json`. Reject required fields that are missing, null, or empty.
 - **Run rate:** Every workflow invocation: about 2 per day at the team estimate of 2 runs/day (`evidence/run-rate.txt`). High.
 - **Preserved edge case:** Present-but-empty required fields are rejected by `scripts/validate_handoff_deterministic.py` and covered by `eval/test_deterministic_step.py`.
-- **Recommendation:** Already deterministic.
 
 ## Step: Path-Based Routing
 - **Status:** Converted to deterministic sample (ADR-002), implemented in `scripts/route_task_deterministic.py`. This is a separate step from Orchestrator Routing below; the HO-05 runs do not test it.
@@ -27,6 +32,7 @@ This document records the four-signal assessment of agentic workflow steps: stab
 - **Run rate:** Once per workflow run (first role in every holdout path): 2 × 6/6 = 2.0 per day. High.
 - **Known edge case:** An external update succeeds, but its confirmation is lost.
 - **Recommendation:** Weak candidate. The repeatable part (a brief built from the task text) has little to convert; first resolve why the entry write never happens and raise rubric quality above threshold.
+- **Candidate since:** 2026-10-17. **Next review:** 2026-11-18.
 
 ## Step: Planner
 - **Stability:** Two cycles (2026-10-17): deterministic 70/70 (cycle 1, 5 tasks; HO-06 missing) and 84/84 (cycle 2, 6 tasks) — consistent. Rubric 46/80 (57.5%) and 59/96 (61.5%); tasks passing both layers 0/5 and 1/6. Scores are consistent across cycles but rubric quality is below threshold, and several cycle-2 passes were vacuous (see `evidence/calibration_results.md`).
@@ -35,7 +41,7 @@ This document records the four-signal assessment of agentic workflow steps: stab
 - **Run rate:** Once per workflow run: 2 × 6/6 = 2.0 per day. High.
 - **Known edge case:** A bug report lacks reproduction steps.
 - **Recommendation:** Not a candidate. Needs judgment and synthesis to break a task into subtasks; output is not specifiable in advance. Consider converting narrowly defined substeps (e.g. "always retrieve first") as deterministic guards.
-- **Reviewed:** 2026-10-17 against calibration cycles 1–2 and the HO-02 repeat runs; still not a candidate. **Next review:** after the next calibration cycle.
+- **Reviewed:** 2026-10-17 against calibration cycles 1–2 and the HO-02 repeat runs; still not a candidate. **Next review:** 2027-01-21.
 
 ## Step: Implementer
 - **Stability:** Two cycles (2026-10-17): deterministic 70/70 (cycle 1, 5 tasks; HO-06 missing) and 84/84 (cycle 2, 6 tasks) — consistent. Rubric 46/80 (57.5%) and 59/96 (61.5%); tasks passing both layers 0/5 and 1/6. Scores are consistent across cycles but rubric quality is below threshold, and several cycle-2 passes were vacuous (see `evidence/calibration_results.md`).
@@ -44,6 +50,7 @@ This document records the four-signal assessment of agentic workflow steps: stab
 - **Run rate:** Once per workflow run that includes implementation: 2 × 5/6 ≈ 1.7 per day. High.
 - **Known edge case:** A planned file changes before implementation begins.
 - **Recommendation:** Not a candidate. Not repeatable and requires judgment. Investigate the tool-call variation and consider automating bounded substeps.
+- **Next review:** 2027-01-21.
 
 ## Step: Reviewer
 - **Stability:** Two cycles (2026-10-17): deterministic 70/70 (cycle 1, 5 tasks; HO-06 missing) and 84/84 (cycle 2, 6 tasks) — consistent. Rubric 46/80 (57.5%) and 59/96 (61.5%); tasks passing both layers 0/5 and 1/6. Scores are consistent across cycles but rubric quality is below threshold, and several cycle-2 passes were vacuous (see `evidence/calibration_results.md`).
@@ -52,6 +59,7 @@ This document records the four-signal assessment of agentic workflow steps: stab
 - **Run rate:** Once per workflow run that includes review (twice for dual-review tasks): 2 × 4/6 ≈ 1.3 runs per day, about 1.7 reviewer invocations per day. High.
 - **Known edge case:** A change meets functional acceptance criteria but introduces a security vulnerability.
 - **Recommendation:** Not a candidate. Three runs gave three different decisions, and broader review requires judgment. Automate explicit checks while keeping judgment-based review.
+- **Next review:** 2027-01-21.
 
 ## Step: Tester
 - **Stability:** Two cycles (2026-10-17): deterministic 70/70 (cycle 1, 5 tasks; HO-06 missing) and 84/84 (cycle 2, 6 tasks) — consistent. Rubric 46/80 (57.5%) and 59/96 (61.5%); tasks passing both layers 0/5 and 1/6. Scores are consistent across cycles but rubric quality is below threshold, and several cycle-2 passes were vacuous (see `evidence/calibration_results.md`).
@@ -60,6 +68,7 @@ This document records the four-signal assessment of agentic workflow steps: stab
 - **Run rate:** Once per workflow run that includes testing: 2 × 4/6 ≈ 1.3 per day. High.
 - **Known edge case:** An environment failure makes the result inconclusive.
 - **Recommendation:** Not a candidate. Not repeatable, and the step is a judgment over the implementer's entry rather than test execution. Assess deterministic test execution separately from agentic interpretation of failures.
+- **Next review:** 2027-01-21.
 
 ## Step: Orchestrator Routing
 - **Stability:** Two cycles (2026-10-17): deterministic 70/70 (cycle 1, 5 tasks; HO-06 missing) and 84/84 (cycle 2, 6 tasks) — consistent. Rubric 46/80 (57.5%) and 59/96 (61.5%); tasks passing both layers 0/5 and 1/6. Scores are consistent across cycles but rubric quality is below threshold, and several cycle-2 passes were vacuous (see `evidence/calibration_results.md`).
@@ -76,6 +85,7 @@ This document records the four-signal assessment of agentic workflow steps: stab
   3. ~~Confirm the three HO-05 runs used the intended task text.~~ Checked 2026-10-17: they did not (empty task).
   4. Rerun HO-05 three times with the task text from `docs/holdout-task-set.md` (e.g. via `evidence/holdout.sh`) and `diff` the extracted path and escalation flag.
   5. Run one more calibration cycle with the fix in which HO-05's reviewers return non-empty verdicts and the rubric score clears the threshold.
+- **Candidate since:** 2026-10-17. **Next review:** 2026-11-04.
 
 ## Step: Human Approval
 - **Stability:** Not applicable to the human decision itself.
@@ -84,6 +94,7 @@ This document records the four-signal assessment of agentic workflow steps: stab
 - **Run rate:** Not yet measured.
 - **Known edge case:** Approval is missing or refers to an outdated change.
 - **Recommendation:** Not a candidate. The human decision must stay human. Approval-state validation (present, current, authorized) can be automated separately.
+- **Next review:** 2027-04-21 (approval-state validation substep only; the human decision stays human).
 
 ## Step: Release Note Draft
 - **Stability:** Not measured in this cycle.
@@ -92,7 +103,7 @@ This document records the four-signal assessment of agentic workflow steps: stab
 - **Run rate:** Not yet measured.
 - **Recommendation:** Not a candidate. Re-scoped on 2026-10-17 after more than two cycles as a weak candidate without new evidence: the full draft is prose that needs human review and has never been shown to be repeatable.
 - **Narrower substep to assess separately:** a check that a draft has the required sections and formatting. That check is specifiable and repeatable by construction, but its run rate has not been measured.
-- **Candidate since:** 2026-06-04. **Reviewed:** 2026-10-17 (re-scoped as above).
+- **Candidate since:** 2026-06-04. **Reviewed:** 2026-10-17 (re-scoped as above). **Next review:** 2027-01-21.
 
 ---
 
