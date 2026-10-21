@@ -179,7 +179,11 @@ Run: `python3 eval/run_holdout.py .eval-artifacts/runs/holdout-clean` (from repo
 
 ### Integrated end-to-end regression check
 
-- Date: 2026-06-06
-- Result: 24/24 harness checks passing; no regressions.
-- Policy suite: passing.
-- Evidence: deterministic validator is wired into orchestration and governance artifacts are in sync.
+- Date: 2026-10-21 (end-to-end runs executed 2026-10-20, after integration commit `147529b`).
+- Development runs (3): `.eval-artifacts/runs/dev/RUN-20261020-185312.json`, `RUN-20261020-190219.json`, `RUN-20261020-190359.json`. Each completed the expected path planner → implementer → reviewer → tester with no human escalation.
+- Holdout runs (1): `.eval-artifacts/runs/holdout/HO-01.json`, completed the expected path with no human escalation. Note: only one holdout task was run after integration; the `before-1/2/3` files predate commit `147529b` and are not counted. A second holdout task remains outstanding.
+- Evaluation harness (`pytest eval/test_deterministic.py eval/test_rubric_suite.py -v`): 5/5 passing, matching the isolated measurement.
+- Policy suite (`pytest eval/test_policy.py -v`): 9/9 passing; the converted role's policy entry, routing-map row, and MCP grant were removed in `147529b` with no stale entries surfacing.
+- Total: 14/14 checks passing.
+- Regressions: none (no quality, schema, or scope failures).
+
