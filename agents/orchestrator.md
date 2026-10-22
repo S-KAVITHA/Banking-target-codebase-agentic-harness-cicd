@@ -61,6 +61,16 @@ Invoke the subagents in this order:
 5. project-manager
    receives: final run summary + human approval
 
+### Handoff validation
+
+Before a subagent's handoff document is consumed by the next workflow step:
+
+Run : python scripts/validate_handoff_deterministic.py --input handoff.json --output result.json.
+Read result.json.
+If valid is false, stop and report the problems list.
+If valid is true, continue to the next workflow step.
+Do not delegate this validation step to a subagent.
+
 ### Evaluation gate
 
 After each subagent returns, evaluate its result against the phase's

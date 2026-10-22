@@ -43,6 +43,9 @@ def main() -> int:
 
     policy_report = load_json(artifact_dir / "policy-report.json", {})
     governed_report = load_json(artifact_dir / "governed-file-report.json", {})
+    integrity_report = load_json(
+        artifact_dir / "pipeline-integrity.json", {}
+    )
     review_audit = load_json(artifact_dir / "review-audit.json", {})
     review_output = load_text(artifact_dir / "review-output.md", "")
 
@@ -62,12 +65,14 @@ def main() -> int:
             "policy_gate": args.policy_result,
             "governed_file_gate": args.governed_result,
             "advisory_review": args.review_result,
+            "pipeline_integrity": integrity_report.get("status", "unknown"),
         },
         "reports_present": {
             "policy_report": bool(policy_report),
             "governed_file_report": bool(governed_report),
             "review_audit": bool(review_audit),
             "review_output": bool(review_output),
+            "pipeline_integrity_report": bool(integrity_report),
         },
         "policy_report_summary": {
             "exitcode": policy_report.get("exitcode"),

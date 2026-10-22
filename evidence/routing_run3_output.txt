@@ -1,0 +1,2 @@
+path: project_manager planner implementer reviewer_strict reviewer_lenient tester
+escalated_to_human: False

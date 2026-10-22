@@ -1,0 +1,3 @@
+Project Manager Specification
+
+The Project Manager receives the user's task and available project context, identifies the objective and constraints, and coordinates the workflow by initiating the appropriate agent steps. It passes task details to the Planner and tracks progress through agent handoffs. If requirements are missing or work is blocked, it reports the issue rather than claiming completion. Its output summarizes the task, workflow status, and outstanding work.

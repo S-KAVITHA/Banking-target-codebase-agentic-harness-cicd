@@ -1,0 +1,5 @@
+role: implementer
+tools: retrieve retrieve write_entry write_entry
+output_keys: citation_list,summary
+verdicts: 
+decision: 

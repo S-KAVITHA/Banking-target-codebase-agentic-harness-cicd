@@ -155,6 +155,7 @@ Run: `python3 eval/run_holdout.py .eval-artifacts/runs/holdout-clean` (from repo
 - Token cost: $0.003 per run.
 - Deterministic harness checks: 7/7 passing.
 - Review latency: about 30 seconds.
+- Note (2026-10-19): these values are historical estimates from the original conversion work (2026-06); the source harness reports were not carried into this repository. The agentic validation step no longer exists in `eval/orchestrator.py`, so this baseline cannot be re-measured. Treat these figures as estimates, not verified measurements.
 
 ### After conversion — deterministic handoff validator in isolation
 
@@ -164,9 +165,25 @@ Run: `python3 eval/run_holdout.py .eval-artifacts/runs/holdout-clean` (from repo
 - Output variance: zero; `diff` reported no differences across three runs.
 - Review latency: about 5 seconds.
 
+### After conversion — re-measurement (2026-10-19)
+
+- Input: `examples/holdout.json`, three runs of `python scripts/validate_handoff_deterministic.py --input examples/holdout.json --output result_runN.json` inside the container.
+- Cycle time: 0.136 s, 0.139 s, 0.143 s (average ≈0.14 s).
+- Token cost: $0 (no model call).
+- Output variance: zero; `diff result_run1.json result_run2.json` and `diff result_run1.json result_run3.json` reported no differences. Each result was `{"valid": true, "problems": []}`.
+- Unit tests: `eval/test_deterministic_step.py` 7/7 passing, including the empty, whitespace-only, and missing required-field cases.
+- Harness: `eval/test_deterministic.py` 3/3 passing, including `test_handoff_validator_cli_accepts_good_input`.
+- Rubric dimensions (`eval/rubric.json`): correctness and task_adherence are covered by the deterministic checks above; clarity and groundedness score prose and are **not applicable** to structured output (N/A, not a failure).
+- Review latency: not re-measured in this run.
+- Regression: none. Every deterministic check passes.
+
 ### Integrated end-to-end regression check
 
-- Date: 2026-06-06
-- Result: 24/24 harness checks passing; no regressions.
-- Policy suite: passing.
-- Evidence: deterministic validator is wired into orchestration and governance artifacts are in sync.
+- Date: 2026-10-21 (end-to-end runs executed 2026-10-20, after integration commit `147529b`).
+- Development runs (3): `.eval-artifacts/runs/dev/RUN-20261020-185312.json`, `RUN-20261020-190219.json`, `RUN-20261020-190359.json`. Each completed the expected path planner → implementer → reviewer → tester with no human escalation.
+- Holdout runs (1): `.eval-artifacts/runs/holdout/HO-01.json`, completed the expected path with no human escalation. Note: only one holdout task was run after integration; the `before-1/2/3` files predate commit `147529b` and are not counted. A second holdout task remains outstanding.
+- Evaluation harness (`pytest eval/test_deterministic.py eval/test_rubric_suite.py -v`): 5/5 passing, matching the isolated measurement.
+- Policy suite (`pytest eval/test_policy.py -v`): 9/9 passing; the converted role's policy entry, routing-map row, and MCP grant were removed in `147529b` with no stale entries surfacing.
+- Total: 14/14 checks passing.
+- Regressions: none (no quality, schema, or scope failures).
+
