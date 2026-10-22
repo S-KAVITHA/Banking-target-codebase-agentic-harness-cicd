@@ -35,6 +35,75 @@ signals is reviewed for re-scoping.
 - **Recommendation:** Weak candidate. Run rate is high and the structure is repeatable, but stability is only partial (rubric below threshold) and only the mechanical half of the step is specifiable. The repeatability result is also weaker than it looks: all three runs consistently skipped the entry write the role is supposed to perform, so a script reproducing current behavior would preserve a defect. First fix the skipped `write_entry` and get the rubric above threshold, then narrow the spec to the mechanical brief and re-measure. If the summary must stay prose, convert only the bounded substep (blank-task rejection plus entry creation) and keep the summary with an agent.
 - **Candidate since:** 2026-10-17. **Next review:** 2026-11-18.
 
+### Conversion plan: Project Manager intake substep (ADR-003, Proposed)
+
+#### Test plan
+
+Unit tests for the proposed deterministic intake step (proposed names: `scripts/project_intake_deterministic.py`, tested by `eval/test_deterministic_intake.py`). Each test runs against a fake store that records every `write_entry` call, so the tests can check whether a write happened as well as what came back.
+
+| # | Test | Input | Expected output | Why it matters |
+|---|---|---|---|---|
+| 1 | **Normal case:** a valid task creates one entry and forwards the task | `task` = HO-02 text ("Refactor the date-parsing helper to accept ISO 8601 timestamps in addition to the current format."), `project_id` = `demo-project` | Success. Exactly **one** `write_entry` call (`entry_type` `plan`, `classification` `internal`, `content` = task text). Handoff = `{"task": <identical to input>, "from_role": "project_manager", "entry_id": <id returned by the store>, "citation_list": []}`. | Protects the defect found in the HO-02 repeat runs: all three agent runs skipped the `write_entry` the role requires. It also checks that the task text reaches the Planner unchanged, and that `entry_id` is the one the store returned, not an invented one (the gap fixed by `written_entry_ids` on 2026-09-14). |
+| 2 | **Edge case (known agent judgment):** blank task is rejected and the run stops | Three parametrized inputs: `task` = `""`, `"   "`, `"\n\t  "` | Failure result `{"ok": false, "error": "task is empty"}`, non-zero exit from the CLI. **Zero** `write_entry` calls. **No** handoff produced, so the orchestrator does not start the Planner. | Protects the edge case named in the classification. In all three HO-05 repeat runs the agent got `"task": ""` and asked for clarification instead of writing an entry. That judgment did not stop the workflow, though: in run 1 the Implementer still wrote an entry and both reviewers and the Tester ran on an empty task. The script must keep the "do not create a project" behavior and add the stop. Whitespace-only input is included because a check like `if not task` would accept `"   "`. |
+| 3 | **Invalid input:** missing or non-string task | `{}` (no `task` key), `{"task": null}`, `{"task": 42}` | Failure result `{"ok": false, "error": "task must be a non-empty string"}`. Zero `write_entry` calls. No handoff. | A malformed handoff must fail with a clear error, not raise a `KeyError` or `TypeError` mid-run (compare the `KeyError: 'classification'` crash that broke HO-06 in calibration cycle 1). It also keeps "missing" and "null" from being treated as different from "empty". |
+| 4 | **Failure case:** the store write fails | Valid HO-02 task. The fake store's `write_entry` raises an error or returns no `entry_id`. | Failure result `{"ok": false, "error": "project entry write failed: <reason>"}`. No handoff produced. | Without this test, the step could hand the Planner an `entry_id` that does not exist and the chain would reference a missing entry. This is the "update succeeds, but its confirmation is lost" risk previously recorded for this step. A missing confirmation must be treated as failure, not success. |
+
+All four tests use a fake store with no model call and no network, so they belong in the deterministic CI gate next to `eval/test_deterministic_step.py`.
+
+#### Measurements before accepting the conversion
+
+Collect each measurement on the same inputs before and after: the holdout tasks HO-01 to HO-06 from `docs/holdout-task-set.md`, plus three repeat runs of HO-02, and three repeat runs of HO-05 with its **real** task text. The "before" column is taken only after the ADR-003 preconditions are met (skipped `write_entry` fixed, rubric above threshold), so the baseline is not measured on a defect. Record both in `docs/calibration-log.md` under "Conversion measurements".
+
+| Measurement | Before (agent) | After (script) | Accept if |
+|---|---|---|---|
+| **Latency** | Project Manager step time per run, averaged over 3 runs. Not currently recorded: transcripts only carry whole-run `duration_seconds`, so per-role timing must be added to `run_role` first. | Intake script time per run, averaged over 3 runs. | Lower, and whole-run `duration_seconds` does not rise. |
+| **Token cost** | Project Manager input + output tokens per run. Not currently measured: `token_cost` is always 0 because `total_tokens` in `eval/orchestrator.py` (line 591) is initialized and never incremented. Fix that first. | $0 for intake. If the prose brief stays with an agent, record its remaining tokens separately. | Intake cost is $0, and any remaining brief cost is reported, not hidden. |
+| **Predictability** | `diff` of `evidence/extract_step.py` output across 3 HO-02 runs, plus whether `write_entry` happened in each (currently 0/3). | Same `diff`, plus the `write_entry` count. | Identical output on all 3 runs **and** exactly one `write_entry` per run (3/3). |
+| **Audit clarity** | Project Manager `write_entry` events in the storage audit log per run (currently none, so no project entry is traceable to intake). | Exactly one `write_entry` audit event per run with the intake step as caller, and an `entry_id` that matches the handoff's `entry_id`. Blank task: zero writes and a logged rejection. | Every run's project entry is traceable from handoff to audit log, and blank-task runs leave a rejection record and no entry. |
+| **Blank-task behavior** | HO-05 empty-task runs: agent asks for clarification, but the workflow continues (run 1 reached Implementer, both reviewers, and Tester). | The run stops at intake; no downstream role starts. | 3/3 blank-task runs stop at intake. |
+| **Unit tests** | n/a | `eval/test_deterministic_intake.py`, tests 1–4 above. | 4/4 passing, including the blank-task test. |
+| **Deterministic harness** | `eval/test_deterministic.py` checks per holdout task (cycle 2 baseline: 84/84). | Same checks. | Every check that passed before still passes. |
+| **Rubric** (`eval/rubric.json`) | correctness, task_adherence, groundedness, clarity scored on each holdout transcript (cycle 2: 59/96). | Same four dimensions. | correctness and task_adherence do not drop. See the note below for the other two. |
+| **Policy suite** | `pytest eval/test_policy.py -v` (9/9). | Same, after the governance changes below. | 9/9 (or more, if tests are added), with no test describing access that no longer exists. |
+
+**Rubric dimensions that may become not applicable.** The script returns a structured handoff (`task`, `entry_id`, empty `citation_list`) instead of a prose brief:
+
+- **clarity** scores prose organization. For the intake output it is **N/A**, not a failure.
+- **groundedness** scores use of retrieved sources. Intake does no retrieval and cites nothing, so it is **N/A** for this step.
+- **correctness** and **task_adherence** still apply.
+
+The rubric judge scores the whole run transcript, not one role, so the Planner and later roles will still be scored on these dimensions. If a run's total drops only because the Project Manager's prose summary is gone, record it as N/A for intake rather than a regression. Compare per-dimension scores, not totals. ADR-001 handled its structured output the same way.
+
+#### Rollback note
+
+Make the conversion revertible by putting the whole integration into **one focused commit**, for example `refactor: convert project-manager intake to deterministic step (ADR-003)`. That commit contains only the conversion:
+
+| Artifact | Change in the conversion commit | On rollback (`git revert <sha>`) |
+|---|---|---|
+| `scripts/project_intake_deterministic.py`, `eval/test_deterministic_intake.py` | Added | Removed |
+| **Orchestrator instructions:** `eval/orchestrator.py` (`run_orchestrator` calls the intake script before the first agent role; `_ROLE_DESCRIPTIONS["project_manager"]` narrowed to the brief or removed) and `agents/orchestrator.md` (step 5, project-manager) | Changed | Restored: the agent receives the raw task again |
+| **Routing map row:** `docs/routing-and-tool-grant-map.json` (`project_manager` grant) and `docs/routing-and-tool-grant-map.md` (project-manager row) | Row updated for the narrowed role, intake added as a deterministic step | Restored |
+| **Governance policy entry:** `docs/governance-policy.md`, "Role: project-manager" | Updated to match the new boundary | Restored |
+| **Retired agent artifacts:** `agents/project-manager.md` and `.claude/agents/project-manager.md` | Narrowed to the prose brief, or retired if the brief is dropped | Restored |
+| **CI step:** `.github/workflows/ci.yml`, "Run deterministic checks" | `eval/test_deterministic_intake.py` added to the pytest list | Removed |
+
+**Kept out of the conversion commit** so a revert does not undo them:
+
+- The precondition fixes (the skipped `write_entry` and per-role timing and token counting in `eval/orchestrator.py`).
+- The before and after measurements in `docs/calibration-log.md`.
+- ADR-003 status changes.
+
+These are useful whether or not the conversion stays.
+
+**Known conflict to resolve in the conversion commit.** `docs/governance-policy.md` (Role: project-manager) says `write_entry` is **NO**. But `docs/routing-and-tool-grant-map.json`, `GRANT_MAP` in `eval/orchestrator.py`, and the role prompt all grant or require `write_entry`. The policy suite does not currently catch this. The conversion commit must decide which side is correct, and `eval/test_policy.py` should get a check for this role so the mismatch cannot return.
+
+**After a rollback:**
+
+1. Rerun the end-to-end workflow, the Evaluation Harness, and the policy suite.
+2. Log the rollback and its reason in `docs/calibration-log.md`.
+3. Set ADR-003 to **Rejected**, or **Superseded** if a re-scoped attempt follows.
+4. Return the Project Manager entry above to weak candidate with a new next-review date.
+
 ## Step: Planner
 - **Stability:** Two cycles (2026-10-17): deterministic 70/70 (cycle 1, 5 tasks; HO-06 missing) and 84/84 (cycle 2, 6 tasks) — consistent. Rubric 46/80 (57.5%) and 59/96 (61.5%); tasks passing both layers 0/5 and 1/6. Scores are consistent across cycles but rubric quality is below threshold, and several cycle-2 passes were vacuous (see `evidence/calibration_results.md`).
 - **Repeatability:** Not repeatable. Three runs on HO-02: runs 1–2 made no tool calls; run 3 made four `retrieve` calls. Summary length 43/29/102 words. Runs 1–2 also contradict the role prompt, which requires retrieving before planning.
