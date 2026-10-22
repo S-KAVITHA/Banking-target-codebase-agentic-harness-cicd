@@ -26,12 +26,13 @@ signals is reviewed for re-scoping.
 - **Recommendation:** Already deterministic.
 
 ## Step: Project Manager
-- **Stability:** Two cycles (2026-10-17): deterministic 70/70 (cycle 1, 5 tasks; HO-06 missing) and 84/84 (cycle 2, 6 tasks) — consistent. Rubric 46/80 (57.5%) and 59/96 (61.5%); tasks passing both layers 0/5 and 1/6. Scores are consistent across cycles but rubric quality is below threshold, and several cycle-2 passes were vacuous (see `evidence/calibration_results.md`).
-- **Repeatability:** Repeatable in structure. Three runs on HO-02: `diff` of the extracted output (`evidence/project_manager_run*_output.txt`) reported no differences. Summary length varied 55/62/87 words. Caveat: all three runs made zero tool calls, although the role prompt tells it to create a project entry with `write_entry` — the output is consistent, but consistently skips the step it is described as doing.
-- **Specifiability:** See `evidence/spec_project_manager.md`.
-- **Run rate:** Once per workflow run (first role in every holdout path): 2 × 6/6 = 2.0 per day. High.
-- **Known edge case:** An external update succeeds, but its confirmation is lost.
-- **Recommendation:** Weak candidate. The repeatable part (a brief built from the task text) has little to convert; first resolve why the entry write never happens and raise rubric quality above threshold.
+- **What it does:** First role in every workflow run. It receives the raw task text from `eval/orchestrator.py` (plus an optional canary), is instructed to create a project entry with `write_entry`, and hands a brief to the Planner as a JSON object with `summary` and `citation_list`. Its output is the first handoff every downstream role consumes.
+- **Stability — Partial.** Deterministic checks consistent across two calibration cycles (70/70 cycle 1, 84/84 cycle 2, 2026-10-17), but rubric quality is below threshold (46/80 = 57.5%, 59/96 = 61.5%) and several cycle-2 passes were vacuous (`evidence/calibration_results.md`).
+- **Repeatability — Pass (structure only).** Three HO-02 runs: `diff` of the extracted output (`evidence/project_manager_run*_output.txt`) reported no differences (`evidence/repeatability_results.md`). Summary prose varied (55 / 62 / 87 words), and all three runs skipped the `write_entry` call the role prompt requires, so the output is consistent but consistently incomplete.
+- **Specifiability — Partial.** The mechanical part can be specified: reject an empty task, create one project entry, forward the task text unchanged with no citations. The current spec (`evidence/spec_project_manager.md`) also asks it to "identify the objective and constraints" and summarize, which is prose synthesis and not specifiable in advance.
+- **Run rate — High.** Every workflow run (6/6 holdout paths): 2 × 6/6 = 2.0 per day (`evidence/run-rate.txt`).
+- **Known agent judgment / edge-case input:** An empty or whitespace-only task. In all three HO-05 repeat runs (`.eval-artifacts/runs/repeat/HO-05-run*.json`, `"task": ""`) the Project Manager asked for clarification instead of creating a project. A deterministic version must reject a blank task with a clear error, not create an empty project entry and pass it downstream.
+- **Recommendation:** Weak candidate. Run rate is high and the structure is repeatable, but stability is only partial (rubric below threshold) and only the mechanical half of the step is specifiable. The repeatability result is also weaker than it looks: all three runs consistently skipped the entry write the role is supposed to perform, so a script reproducing current behavior would preserve a defect. First fix the skipped `write_entry` and get the rubric above threshold, then narrow the spec to the mechanical brief and re-measure. If the summary must stay prose, convert only the bounded substep (blank-task rejection plus entry creation) and keep the summary with an agent.
 - **Candidate since:** 2026-10-17. **Next review:** 2026-11-18.
 
 ## Step: Planner
