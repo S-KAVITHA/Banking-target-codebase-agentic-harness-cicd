@@ -15,7 +15,9 @@ The Project Manager is the first role in every workflow run. It receives the raw
 - Specifiability is partial. Intake is mechanical: reject a blank task, create one project entry, forward the task text. The summary ("identify the objective and constraints") is prose synthesis.
 - Run rate is high: every workflow run, about 2.0 per day.
 
-The edge case the agent currently handles by judgment is an empty or whitespace-only task. In all three HO-05 repeat runs (`"task": ""`), the Project Manager asked for clarification instead of creating a project. A deterministic version must preserve this behavior.
+The edge case the agent currently handles by judgment is an empty or whitespace-only task. In all three HO-05 repeat runs (`"task": ""`), the Project Manager asked for clarification instead of creating a project. That request did not stop the workflow, though: in run 1 the Implementer still wrote an entry, and both reviewers and the Tester ran on the empty task. A deterministic version must preserve the "do not create a project" behavior and also stop the run.
+
+The governance artifacts also disagree about this role's write access. `docs/governance-policy.md` (Role: project-manager) sets `write_entry` to NO, while `docs/routing-and-tool-grant-map.json`, `GRANT_MAP` in `eval/orchestrator.py`, and the role prompt all grant or require it. `eval/test_policy.py` does not currently catch the mismatch. Since the proposed script writes the project entry, the conversion must resolve this conflict (see the rollback note in `docs/step-classification.md`).
 
 Because the full step does not meet all four signals, this ADR proposes converting only the specifiable intake substep, not the whole role.
 
@@ -34,6 +36,7 @@ Preconditions before implementation begins:
 - Fix the skipped `write_entry` in the current agent, so the baseline is not measured on a defect.
 - Get the Project Manager's rubric scores above threshold for one calibration cycle.
 - Narrow `evidence/spec_project_manager.md` to the intake behavior above.
+- Resolve the `write_entry` conflict between the governance policy and the grant map, and add a policy test for it.
 
 ## Alternatives considered
 
